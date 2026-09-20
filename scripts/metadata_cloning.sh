@@ -60,9 +60,14 @@ else
 			continue
 		fi
 
-		if exiftool -XMP-x:XMPToolkit= \
-    		-TagsFromFile "$i" -all:all -XMP-x:XMPToolkit \
-	    	-P -overwrite_original "$output" &>/dev/null; then
+                xmp_tmp="$(mktemp)"
+                exiftool -b -xmp "$i" > "$xmp_tmp" 2>/dev/null
+                xmp_args=()
+                [ -s "$xmp_tmp" ] && xmp_args=("-xmp<=$xmp_tmp")
+
+                if exiftool -all:all= "${xmp_args[@]}" \
+                -TagsFromFile "$i" -all:all --xmp:all -PDF:Trapped \
+                -P -overwrite_original "$output" &>/dev/null; then
 
 			echo "[SUCESSO] $output com metadados idênticos ao original."
 
@@ -72,7 +77,18 @@ else
 		fi
 
 
+		rm -f "$xmp_tmp"
 		touch -r "$i" "$output"
+
+                diff_out="$(diff \
+                        <(exiftool -a -G1 -s --File:all --ExifTool:all --PDF:MediaBox "$i" | sort) \
+                        <(exiftool -a -G1 -s --File:all --ExifTool:all --PDF:MediaBox "$output" | sort))"
+                if [ -z "$diff_out" ]; then
+                        echo "[DIFF] $base_name: metadados idênticos."
+                else
+                        echo "[DIFF] $base_name: diferenças (< original | > editado):"
+                        echo "$diff_out"
+                fi
 	done
 
 fi
