@@ -60,9 +60,9 @@ else
 			continue
 		fi
 
-		if exiftool -TagsFromFile "$i" \
-		-all:all -P \
-		-overwrite_original "$output" &>/dev/null; then
+		if exiftool -XMP-x:XMPToolkit= \
+    		-TagsFromFile "$i" -all:all -XMP-x:XMPToolkit \
+	    	-P -overwrite_original "$output" &>/dev/null; then
 
 			echo "[SUCESSO] $output com metadados idênticos ao original."
 
